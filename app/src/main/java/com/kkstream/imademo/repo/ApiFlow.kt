@@ -50,7 +50,23 @@ class ApiFlow(
             pollingHeartbeat(CONTENT_ID, contentType, playbackToken)
 
             //get manifest
-            val playbackInfoData = getPlaybackInfo(CONTENT_ID, contentType, startSessionData.token)!!
+            val playbackInfoData = getPlaybackInfo(CONTENT_ID, contentType, playbackToken)!!
+            withContext(Dispatchers.Main) {
+                callback(playbackInfoData)
+            }
+        }
+    }
+
+    /**
+     * Request the next content for self-linear
+     */
+    fun getNextContent(nextContentId: String, callback : (playbackInfoData: PlaybackInfoData) -> Unit) {
+        ioScope.launch {
+            val videoInfo = requestVideoInfo(nextContentId)
+            contentType = videoInfo!!.type.toString().toLowerCase(Locale.ROOT)
+
+            //get manifest
+            val playbackInfoData = getPlaybackInfo(nextContentId, contentType, playbackToken)!!
             withContext(Dispatchers.Main) {
                 callback(playbackInfoData)
             }
