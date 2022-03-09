@@ -136,6 +136,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, AdsLoader.AdsLoa
             handler.removeCallbacks(it)
         }
         updateProgress()
+        requestNextContent()
         handler.postDelayed(
                 updateProgressAction,
                 UPDATE_PROGRESS_INTERVAL
@@ -150,6 +151,17 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, AdsLoader.AdsLoa
 
         binding.progressCurrentPosition.text = getContentTime(player.currentPosition).getStringForTime()
         binding.progressDuration.text = getContentTime(player.duration).getStringForTime()
+    }
+    private fun requestNextContent() {
+        val duration = getContentTime(player.duration)
+        val currentPosition = getContentTime(player.currentPosition)
+        if (currentPosition >= duration) {
+            apiFlow.getNextContent("NEXT_CONTENT_ID") { data ->
+                playbackInfoData = data
+            }
+            // prepare the media source and send it to player
+            requestAdContent()
+        }
     }
 
     /**
