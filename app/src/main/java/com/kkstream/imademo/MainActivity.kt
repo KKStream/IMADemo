@@ -253,7 +253,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, AdsLoader.AdsLoa
                 player.seekTo(getStreamTime(position))
             }
             player.playWhenReady = true
-            startUpdateProgressDelayed()
+//            startUpdateProgressDelayed()
         }
     }
 
