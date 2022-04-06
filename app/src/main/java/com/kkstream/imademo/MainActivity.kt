@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, AdsLoader.AdsLoa
 
     private var adType = AdType.VOD
     private val sdkFactory = ImaSdkFactory.getInstance()
-    private lateinit var adsLoader: AdsLoader
+    private var adsLoader: AdsLoader? = null
     private var streamManager: StreamManager? = null
 
     private lateinit var apiFlow: ApiFlow
@@ -51,7 +51,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, AdsLoader.AdsLoa
         apiFlow = ApiFlow(this, handler)
 
         createPlayer()
-        createAdsLoader()
     }
 
     private fun createPlayer() {
@@ -74,30 +73,57 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, AdsLoader.AdsLoa
         mediaSource = DashMediaSource.Factory(DefaultHttpDataSourceFactory("Test"))
             .createMediaSource(Uri.parse(url))
 
-        player.playWhenReady = true
         player.prepare(mediaSource)
     }
 
     private fun createAdsLoader() {
         val setting = sdkFactory.createImaSdkSettings()
+        setting.isDebugMode = true
         val displayContainer = ImaSdkFactory.createStreamDisplayContainer(binding.adsView, adsStreamPlayer)
         adsLoader = sdkFactory.createAdsLoader(this, setting, displayContainer)
-        adsLoader.addAdsLoadedListener(this)
-        adsLoader.addAdErrorListener(adErrorEventListener)
+        adsLoader?.addAdsLoadedListener(this)
+        adsLoader?.addAdErrorListener(adErrorEventListener)
     }
 
     override fun onStart() {
         super.onStart()
+        Log.d(TAG, "onStart")
+        createAdsLoader()
 
         apiFlow.startFlow { data ->
             playbackInfoData = data
-            binding.playPauseBtn.visibility = View.VISIBLE
+//            binding.playPauseBtn.visibility = View.VISIBLE
+            requestAdContent()
         }
     }
 
     override fun onStop() {
         super.onStop()
+        Log.d(TAG, "onStop")
         apiFlow.endFlow()
+        releaseAdsLoader()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        player.playWhenReady = true
+    }
+
+    override fun onPause() {
+        super.onPause()
+
+        player.playWhenReady = false
+    }
+
+    private fun releaseAdsLoader() {
+        streamManager?.removeAdEventListener(adEventListener)
+        streamManager?.removeAdErrorListener(adErrorEventListener)
+        streamManager?.destroy()
+        streamManager = null
+        adsLoader?.removeAdsLoadedListener(this)
+        adsLoader?.removeAdErrorListener(adErrorEventListener)
+        adsLoader?.release()
+        adsLoader = null
     }
 
     override fun onDestroy() {
@@ -136,7 +162,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, AdsLoader.AdsLoa
             handler.removeCallbacks(it)
         }
         updateProgress()
-        requestNextContent()
+//        requestNextContent()
         handler.postDelayed(
                 updateProgressAction,
                 UPDATE_PROGRESS_INTERVAL
@@ -203,7 +229,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, AdsLoader.AdsLoa
                 sdkFactory.createLiveStreamRequest(TEST_DASH_ASSET_KEY, null)
             }
         }.also {
-            adsLoader.requestStream(it)
+            adsLoader?.requestStream(it)
         }
     }
 
@@ -213,6 +239,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, AdsLoader.AdsLoa
     private val timeBarListener = object : TimeBar.OnScrubListener {
         override fun onScrubStart(timeBar: TimeBar, position: Long) {
             player.playWhenReady = false
+            updateProgressAction.let {
+                handler.removeCallbacks(it)
+            }
         }
 
         override fun onScrubMove(timeBar: TimeBar, position: Long) {
@@ -224,6 +253,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, AdsLoader.AdsLoa
                 player.seekTo(getStreamTime(position))
             }
             player.playWhenReady = true
+            startUpdateProgressDelayed()
         }
     }
 

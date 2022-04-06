@@ -197,9 +197,9 @@ class ApiFlow(
         private val TAG = ApiFlow::class.java.simpleName.toString()
 
         // API Info
-        private const val HOST_URL = ""             // https://xxxxxx.xxxx.xxxx
-        private const val CONTENT_ID = ""           // ex: 1, 20, ...etc
-        private const val ACCESS_TOKEN = ""         // token
+        private const val HOST_URL = "https://mock-playback.tfc.kkv-test.com"
+        private const val CONTENT_ID = "40"
+        private const val ACCESS_TOKEN = "tedhsieh"
         private val PLAYBACK_CUSTOM_HEADERS = mapOf(
                 "PaaS-Sample-Platform-Type" to "androidtv",
                 "X-Device-Type" to "androidtv"
